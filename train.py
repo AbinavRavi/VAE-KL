@@ -1,6 +1,7 @@
 import torch
 import torch.optim as optim
 from loss import *
+import torch.utils.tensorboard import SummaryWriter
 
 def train(epoch, model, optimizer, train_loader, device, tx, log_var_std, lamda=0.5, beta=1.0):
     model.train()

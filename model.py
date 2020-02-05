@@ -245,3 +245,57 @@ class Encoder(nn.Module):
             output = middle(output, **kwargs)
         output = self.end(output, **kwargs)
         return output
+
+class VAE(torch.nn.Module):
+    def __init__(self, input_size, h_size, z_dim, to_1x1=True, conv_op=torch.nn.Conv2d,
+                 upsample_op=torch.nn.ConvTranspose2d, normalization_op=None, activation_op=torch.nn.LeakyReLU,
+                 conv_params=None, activation_params=None, block_op=None, block_params=None, output_channels=None,
+                 additional_input_slices=None,
+                 *args, **kwargs):
+
+        super(VAE, self).__init__()
+
+        input_size_enc = list(input_size)
+        input_size_dec = list(input_size)
+        if output_channels is not None:
+            input_size_dec[0] = output_channels
+        if additional_input_slices is not None:
+            input_size_enc[0] += additional_input_slices * 2
+
+        self.encoder = Encoder(image_size=input_size_enc, h_size=h_size, z_dim=z_dim * 2,
+                               normalization_op=normalization_op, to_1x1=to_1x1, conv_op=conv_op,
+                               conv_params=conv_params,
+                               activation_op=activation_op, activation_params=activation_params, block_op=block_op,
+                               block_params=block_params)
+        self.decoder = Generator(image_size=input_size_dec, h_size=h_size[::-1], z_dim=z_dim,
+                                 normalization_op=normalization_op, to_1x1=to_1x1, upsample_op=upsample_op,
+                                 conv_params=conv_params, activation_op=activation_op,
+                                 activation_params=activation_params, block_op=block_op,
+                                 block_params=block_params)
+
+        self.hidden_size = self.encoder.output_size
+
+    def forward(self, inpt, sample=None, **kwargs):
+        enc = self.encoder(inpt, **kwargs)
+
+        mu, log_std = torch.chunk(enc, 2, dim=1)
+        std = torch.exp(log_std)
+        z_dist = dist.Normal(mu, std)
+
+        if sample or self.training:
+            z = z_dist.rsample()
+        else:
+            z = mu
+
+        x_rec = self.decoder(z, **kwargs)
+
+        return x_rec, mu, std
+
+    def encode(self, inpt, **kwargs):
+        enc = self.encoder(inpt, **kwargs)
+        mu, log_std = torch.chunk(enc, 2, dim=1)
+        return mu, log_std
+
+    def decode(self, inpt, **kwargs):
+        x_rec = self.decoder(inpt, **kwargs)
+        return x_rec
