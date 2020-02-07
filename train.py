@@ -3,6 +3,8 @@ import torch.optim as optim
 from loss import *
 import torch.utils.tensorboard import SummaryWriter
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def train(epoch, model, optimizer, train_loader, device, tx, log_var_std, lamda=0.5, beta=1.0):
     model.train()
     train_loss = 0
