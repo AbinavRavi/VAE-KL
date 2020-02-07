@@ -14,14 +14,11 @@ import glob
 import pdb
 
 class cevae(Dataset):
-    def __init__(self,path,patchsize,margin):
+    def __init__(self,path,patchsize,margin,transforms = None):
         self.path = path
         self.dataset = glob.glob(path+'*.nii.gz',recursive=True)
         self.patchsize = patchsize
-        self.transforms = transforms.Compose([transforms.ToPILImage()])#,
-                                            # transforms.RandomCrop(240),
-                                            # transforms.RandomHorizontalFlip(),
-                                            # transforms.Resize(128)])
+        self.transforms = transforms
         self.margin = margin
 
     def __len__(self):
@@ -31,7 +28,11 @@ class cevae(Dataset):
         image = nib.load(self.dataset[index])
         x = image.get_data()
         x = square_mask(x,self.margin,self.patchsize)
-        x = torch.from_numpy(x)
+        # x = RandomCrop(x,192)
+        x = RandomHorizontalFlip(x)
+        x = Resize(x,(128,128))
+        x = np.expand_dims(x,axis=2)
+        x = to_tensor(x)
         
         if self.transforms:
             x = self.transforms(x)
