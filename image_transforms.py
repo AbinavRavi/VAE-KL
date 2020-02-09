@@ -44,12 +44,17 @@ def square_mask(image, margin, patchsize):
     bboxs.append(bbox)
     height = image.shape[0]
     width = image.shape[1]
-    # mask = np.zeros((height, width), np.float32)
+    mask = np.zeros((height, width), np.float32)
     for bbox in bboxs:
         h = int(bbox[2] * 0.1) + np.random.randint(int(bbox[2] * 0.2 + 1))
         w = int(bbox[3] * 0.1) + np.random.randint(int(bbox[3] * 0.2) + 1)
-        image[(bbox[0] + h) : (bbox[0] + bbox[2] - h), (bbox[1] + w) : (bbox[1] + bbox[3] - w)] = 1.
-    return image #mask.reshape((1, ) + mask.shape).astype(np.float32)
+        mask[(bbox[0] + h) : (bbox[0] + bbox[2] - h), (bbox[1] + w) : (bbox[1] + bbox[3] - w)] = 1.
+        mask = np.expand_dims(mask,axis=2)
+        mask = Resize(mask,(128,128))
+        mask = np.expand_dims(mask,axis=2)
+        mask = np.transpose(mask,(2,0,1))
+        mask = torch.from_numpy(mask)
+    return mask.float() #mask.reshape((1, ) + mask.shape).astype(np.float32)
 
 def RandomHorizontalFlip(image):
     if np.random.uniform() < 0.5:
