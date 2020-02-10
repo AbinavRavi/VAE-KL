@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.distributed as dist
+import torch.distributions as dist
 import numpy as np
 import math
 
@@ -38,7 +38,7 @@ def kl_loss_fn(recon_x,x,mu,logstd,rec_log_std=0,sum_samplewise=True):
 def rec_loss_ce(recon_x, x):
 
     """
-    The function checks the l2 loss for reconstruction of image
+    The function checks the l2 loss for reconstruction of image in Context Encoder
     """
 
     loss_fn = nn.MSELoss()
@@ -46,4 +46,13 @@ def rec_loss_ce(recon_x, x):
 
     return loss
 
+def rec_loss_fn (recon_x,x):
 
+    """
+    The function checks the reconstruction loss of image in VAE
+    """
+
+    loss_fn = nn.MSELoss()
+    loss = loss_fn(x,recon_x)
+
+    return loss

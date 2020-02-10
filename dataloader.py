@@ -44,7 +44,12 @@ class cevae(Dataset):
         return x,masked_image
             
 
-# def get_data(path,split,mode='train'):
+def prepare_data(path,margin,patchsize,split = 0.2):
+    dataset = cevae(path,margin,patchsize)
+    val_size = int(split*len(dataset))
+    train_size = int((1-split)*len(dataset))
+    train_ds, val_ds = random_split(dataset,[train_size,val_size])
+    return DataLoader(train_ds, batch_size=8,num_workers=1), DataLoader(val_ds, batch_size=8, num_workers=1)
     
 
 

@@ -112,3 +112,14 @@ if __name__ == '__main__':
     log_var_std = 0.
 
     model_run(patch_size, batch_size, odd_class, z, seed, log_var_std)
+
+dataset_config = {
+    "path" : './data/',
+    "patchsize" : (64,64),
+    "margin" : (80,80)
+}
+
+dataloader_config = {
+    "batch_size": 8,
+    "num_workers":1
+}
