@@ -37,7 +37,7 @@ beta = beta.to(device)
 # train_loader = DataLoader(train_data,batch_size,num_workers)
 
 train_loader, val_loader = prepare_data(path,margin,patchsize,batch_size,split = 0.2)
-model = VAE(input_size,h_dim,z)
+model = VAE(input_size[0],z)
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 lr_scheduler = StepLR(optimizer, step_size=1)
