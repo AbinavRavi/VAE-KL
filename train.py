@@ -1,4 +1,4 @@
-from model import *
+from old_model import *
 from dataloader import *
 from loss import *
 import numpy as np
@@ -21,7 +21,7 @@ set_seed(123)
 path = './data/'
 patchsize = (64,64)
 margin = (80,80)
-batch_size = 64
+batch_size = 256
 num_workers = 1
 epochs = 100
 z = 256
@@ -29,15 +29,14 @@ h_dim = (16, 32, 64, 256)
 input_size = (1,128,128)
 lamda = torch.tensor(0.5)
 beta = torch.tensor(1.0)
-lr = 2e-7
+lr = 1e-4
 
 lamda = lamda.to(device)
 beta = beta.to(device)
-# train_data = cevae(path,patchsize,margin)
-# train_loader = DataLoader(train_data,batch_size,num_workers)
+
 
 train_loader, val_loader = prepare_data(path,margin,patchsize,batch_size,split = 0.2)
-model = VAE(input_size[0],z)
+model = VAE(input_size,h_dim,z)
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 lr_scheduler = StepLR(optimizer, step_size=1)
@@ -56,10 +55,13 @@ def plot_grad_flow(model):
         """
         for n, p in model.named_parameters():
             if (p.requires_grad) and ("bias" not in n):
+                # print(p.grad.abs().mean())
                 ave_grad = p.grad.abs().mean()
+                print(ave_grad,type(ave_grad))
                 max_grad = p.grad.abs().max()
-                writer.add_scalar('average gradient',n, ave_grad.item())
-                writer.add_scalar('maximum gradient',str(n), max_grad.item())
+                print(max_grad,type(max_grad))
+                # writer.add_scalar('average gradient',ave_grad.item(),str(n))
+                # writer.add_scalar('maximum gradient',max_grad.item(),str(n))
 
 
 
@@ -81,11 +83,11 @@ for i in range(epochs):
         x_rec_vae, z_dist,std = model(inpt)
         x_rec_ce,_,_ = model(inpt_noisy)
 
-        # kl_loss_low = kl_loss(z_dist_low)
         kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        # print(kl_div,joint_nll)
         rec_loss_vae = rec_loss_fn(x_rec_vae, inpt)
         # pdb.set_trace()
-        loss_vae = rec_loss_vae  # kl_loss * beta  
+        loss_vae = rec_loss_vae  + kl_loss * beta  
 
         rec_loss_ce = rec_loss_fn(x_rec_ce, inpt)
 
@@ -97,6 +99,9 @@ for i in range(epochs):
         train_loss.append(loss.item())
         optimizer.step()
         writer.add_scalar('ItrLoss/train',loss.item(),i*len(train_loader)+batch_idx)
+        # writer.add_scalar('ItrLoss/KLdiv',kl_loss.item(),i*len(train_loader)+batch_idx)
+        # writer.add_scalar('ItrLoss/log_prob',rec_loss_vae.item(),i*len(train_loader)+batch_idx)
+        # writer.add_scalar('ItrLoss/CEloss',rec_loss_ce.item(),i*len(train_loader)+batch_idx)
     epoch_train_loss = np.array(train_loss).mean()
 
     model.eval()
@@ -109,7 +114,7 @@ for i in range(epochs):
         v_rec_ce,_,_ = model(val_noisy)
         kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
         rec_loss_vae_val = rec_loss_fn(v_rec_vae,val_inpt)
-        v_loss_vae =  rec_loss_vae_val # kl_loss_val* beta
+        v_loss_vae =  rec_loss_vae_val + kl_loss_val* beta
 
         rec_loss_ce_val = rec_loss_fn(v_rec_ce,val_inpt)
         v_loss_ce = rec_loss_ce_val
@@ -119,9 +124,9 @@ for i in range(epochs):
         val_loss.append(v_loss.item())
         writer.add_scalar('ItrLoss/Val',v_loss.item(),i*len(val_loader)+idx)
     epoch_val_loss = np.array(val_loss).mean()
-    # plot_grad_flow(copy.deepcopy(model))
+    plot_grad_flow(model)
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
     print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss))  
-    torch.save(model,'./models/ceVAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
+    # torch.save(model,'./models/ceVAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 
