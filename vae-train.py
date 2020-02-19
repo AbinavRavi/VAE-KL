@@ -74,7 +74,8 @@ epoch_val_loss = []
 for i in range(epochs):
     train_loss = []
     for batch_idx, data in enumerate(tqdm(train_loader,desc = 'train_iter',leave=False)):
-        inpt, inpt_noisy = data
+        # inpt, inpt_noisy = data
+        inpt = data
         
         inpt = inpt.to(device)
         # inpt_noisy = inpt_noisy.to(device)
@@ -83,7 +84,8 @@ for i in range(epochs):
         # x_rec_ce,_,_ = model(inpt_noisy)
 
         # kl_loss_low = kl_loss(z_dist_low)
-        kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        # kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        loss = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
         # rec_loss_vae = rec_loss_fn(x_rec_vae, inpt)
         # pdb.set_trace()
         # loss_vae = rec_loss_vae  # kl_loss * beta  
@@ -93,7 +95,7 @@ for i in range(epochs):
         # loss_ce = rec_loss_ce
 
         # loss = (1. - lamda) * loss_vae + lamda * loss_ce
-        loss = kl_loss
+        # loss = kl_loss
         loss.backward()
         train_loss.append(loss.item())
         optimizer.step()
@@ -103,12 +105,15 @@ for i in range(epochs):
     model.eval()
     val_loss = []
     for idx, vdata in enumerate(tqdm(val_loader,desc = 'val_iter',leave = False)):
-        val_inpt, val_noisy = vdata
+        # val_inpt, val_noisy = vdata
+        val_inpt = vdata
+        val_inpt = val_inpt.to(device)
 
-        val_inpt, val_noisy = val_inpt.to(device), val_noisy.to(device)
+        # val_inpt, val_noisy = val_inpt.to(device), val_noisy.to(device)
         v_rec_vae, v_z, vstd = model(val_inpt)
         # v_rec_ce,_,_ = model(val_noisy)
-        kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        # kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        v_loss = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
         # rec_loss_vae_val = rec_loss_fn(v_rec_vae,val_inpt)
         # v_loss_vae =  rec_loss_vae_val # kl_loss_val* beta
 
@@ -116,13 +121,14 @@ for i in range(epochs):
         # v_loss_ce = rec_loss_ce_val
 
         # v_loss = (1. - lamda)* v_loss_vae + lamda * v_loss_ce
-        v_loss = kl_loss_val
+        # v_loss = kl_loss_val
         val_loss.append(v_loss.item())
         writer.add_scalar('ItrLoss/Val',v_loss.item(),i*len(val_loader)+idx)
     epoch_val_loss = np.array(val_loss).mean()
     # plot_grad_flow(copy.deepcopy(model))
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
-    print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss))  
-    torch.save(model,'./models/VAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
+    print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss)) 
+    if(i % 4 == 0): 
+        torch.save(model,'./models/VAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 
