@@ -41,7 +41,7 @@ class cevae(Dataset):
 #         if self.transforms:
 #             x = self.transforms(x)
 
-        return x,masked_image
+        return x #,masked_image
             
 
 def prepare_data(path,margin,patchsize,batch_size =8,split = 0.2):

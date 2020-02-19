@@ -35,6 +35,10 @@ def kl_loss_fn(recon_x,x,mu,logstd,rec_log_std=0,sum_samplewise=True):
 
     return loss, kl_div, -log_p_x_z
 
+# def kl_loss_fn(recon_x,x,mu,logstd,rec_log_std=0,sum_samplewise=True):
+#     loss = nn.KLDivLoss()
+#     losses = loss(mu,logstd**2)
+#     return losses
 def rec_loss_ce(recon_x, x):
 
     """

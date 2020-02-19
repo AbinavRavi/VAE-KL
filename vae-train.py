@@ -1,4 +1,4 @@
-from model import *
+from old_model import *
 from dataloader import *
 from loss import *
 import numpy as np
@@ -22,15 +22,15 @@ set_seed(123)
 path = './data/'
 patchsize = (64,64)
 margin = (80,80)
-batch_size = 64
+batch_size = 256
 num_workers = 1
 epochs = 100
-z = 256
-h_dim = (16, 32, 64, 256)
+z = 512
+h_dim = (16, 32, 64, 256, 512)
 input_size = (1,128,128)
 lamda = torch.tensor(0.5)
 beta = torch.tensor(1.0)
-lr = 2e-7
+lr = 1e-4
 
 lamda = lamda.to(device)
 beta = beta.to(device)
@@ -38,7 +38,7 @@ beta = beta.to(device)
 # train_loader = DataLoader(train_data,batch_size,num_workers)
 
 train_loader, val_loader = prepare_data(path,margin,patchsize,batch_size,split = 0.2)
-model = VAE(input_size[0],z)
+model = VAE(input_size,h_dim,z)
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 lr_scheduler = StepLR(optimizer, step_size=1)
@@ -93,7 +93,7 @@ for i in range(epochs):
         # loss_ce = rec_loss_ce
 
         # loss = (1. - lamda) * loss_vae + lamda * loss_ce
-
+        loss = kl_loss
         loss.backward()
         train_loss.append(loss.item())
         optimizer.step()
@@ -116,7 +116,7 @@ for i in range(epochs):
         # v_loss_ce = rec_loss_ce_val
 
         # v_loss = (1. - lamda)* v_loss_vae + lamda * v_loss_ce
-
+        v_loss = kl_loss_val
         val_loss.append(v_loss.item())
         writer.add_scalar('ItrLoss/Val',v_loss.item(),i*len(val_loader)+idx)
     epoch_val_loss = np.array(val_loss).mean()
