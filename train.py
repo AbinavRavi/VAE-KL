@@ -21,9 +21,9 @@ set_seed(123)
 path = './data/'
 patchsize = (64,64)
 margin = (80,80)
-batch_size = 256
+batch_size = 512
 num_workers = 1
-epochs = 100
+epochs = 500
 z = 256
 h_dim = (16, 32, 64, 256)
 input_size = (1,128,128)
@@ -57,15 +57,15 @@ def plot_grad_flow(model):
             if (p.requires_grad) and ("bias" not in n):
                 # print(p.grad.abs().mean())
                 ave_grad = p.grad.abs().mean()
-                print(ave_grad,type(ave_grad))
+                # print(ave_grad,type(ave_grad))
                 max_grad = p.grad.abs().max()
-                print(max_grad,type(max_grad))
+                # print(max_grad,type(max_grad))
                 # writer.add_scalar('average gradient',ave_grad.item(),str(n))
                 # writer.add_scalar('maximum gradient',max_grad.item(),str(n))
 
 
 
-log_path = './logs/'
+log_path = './cevae_logs/'
 writer = SummaryWriter(f'{log_path}cevae_{patchsize[0]}_{batch_size}_{lr}')
 model.to(device)
 model.apply(weights_init)
@@ -83,7 +83,8 @@ for i in range(epochs):
         x_rec_vae, z_dist,std = model(inpt)
         x_rec_ce,_,_ = model(inpt_noisy)
 
-        kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        # kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        kl_loss = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
         # print(kl_div,joint_nll)
         rec_loss_vae = rec_loss_fn(x_rec_vae, inpt)
         # pdb.set_trace()
@@ -112,7 +113,8 @@ for i in range(epochs):
         val_inpt, val_noisy = val_inpt.to(device), val_noisy.to(device)
         v_rec_vae, v_z, vstd = model(val_inpt)
         v_rec_ce,_,_ = model(val_noisy)
-        kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        # kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        kl_loss_val = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
         rec_loss_vae_val = rec_loss_fn(v_rec_vae,val_inpt)
         v_loss_vae =  rec_loss_vae_val + kl_loss_val* beta
 
@@ -123,10 +125,12 @@ for i in range(epochs):
 
         val_loss.append(v_loss.item())
         writer.add_scalar('ItrLoss/Val',v_loss.item(),i*len(val_loader)+idx)
+    # writer.add_image('Reconstructed_image_vae',v_rec_vae,i)
     epoch_val_loss = np.array(val_loss).mean()
     plot_grad_flow(model)
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
     print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss))  
-    # torch.save(model,'./models/ceVAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
+    if((i+1)%4 ==0):
+        torch.save(model,'./models/ceVAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 
