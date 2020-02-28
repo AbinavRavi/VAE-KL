@@ -132,3 +132,7 @@ dmypy.json
 /data/
 /logs/
 /models/
+/working_logs/
+/cevae_logs/
+kite-installer
+/VAE_models/

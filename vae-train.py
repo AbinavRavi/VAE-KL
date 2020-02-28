@@ -10,8 +10,10 @@ from tqdm import tqdm
 import pdb
 import copy
 from datetime import date
+import os
+os.environ['CUDA_VISIBLE_DEVICES']='0'
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
 def set_seed(seed=1):
     torch.manual_seed(seed)
@@ -22,11 +24,11 @@ set_seed(123)
 path = './data/'
 patchsize = (64,64)
 margin = (80,80)
-batch_size = 256
+batch_size = 1024
 num_workers = 1
-epochs = 100
-z = 512
-h_dim = (16, 32, 64, 256, 512)
+epochs = 1000
+z = 256
+h_dim = (16, 32, 64, 256)
 input_size = (1,128,128)
 lamda = torch.tensor(0.5)
 beta = torch.tensor(1.0)
@@ -39,6 +41,7 @@ beta = beta.to(device)
 
 train_loader, val_loader = prepare_data(path,margin,patchsize,batch_size,split = 0.2)
 model = VAE(input_size,h_dim,z)
+# model = torch.load('models/VAE_1024_0.0001_197.pt')
 
 optimizer = optim.Adam(model.parameters(), lr=lr)
 lr_scheduler = StepLR(optimizer, step_size=1)
@@ -64,10 +67,10 @@ def plot_grad_flow(model):
 
 
 
-log_path = './logs/'
+log_path = './working_logs/'
 writer = SummaryWriter(f'{log_path}{date.today()}_vae_{patchsize[0]}_{batch_size}_{lr}')
 model.to(device)
-model.apply(weights_init)
+# model.apply(weights_init)
 model.train()
 epoch_train_loss = []
 epoch_val_loss = []
@@ -128,7 +131,7 @@ for i in range(epochs):
     # plot_grad_flow(copy.deepcopy(model))
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
     print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss)) 
-    if(i % 4 == 0): 
-        torch.save(model,'./models/VAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
+    if((i+1) % 4 == 0): 
+        torch.save(model,'./VAE_models/VAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 
