@@ -35,13 +35,14 @@ class cevae(Dataset):
         # x = np.expand_dims(x,axis=2)
         x = RandomHorizontalFlip(x)
         x = Resize(x,(128,128))
+        x = normalise(x)
         x = np.expand_dims(x,axis=2)
         x = to_tensor(x).float()
         masked_image = torch.where(mask !=0,mask,x)
 #         if self.transforms:
 #             x = self.transforms(x)
 
-        return x #,masked_image
+        return x ,masked_image
             
 
 def prepare_data(path,margin,patchsize,batch_size =8,split = 0.2):

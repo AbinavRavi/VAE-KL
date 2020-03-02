@@ -136,3 +136,5 @@ dmypy.json
 /cevae_logs/
 kite-installer
 /VAE_models/
+/All_abnormal/
+/all_normal/

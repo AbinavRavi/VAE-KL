@@ -21,9 +21,9 @@ set_seed(123)
 path = './data/'
 patchsize = (64,64)
 margin = (80,80)
-batch_size = 512
-num_workers = 1
-epochs = 500
+batch_size = 1024
+num_workers = 4
+epochs = 1500
 z = 256
 h_dim = (16, 32, 64, 256)
 input_size = (1,128,128)
@@ -84,7 +84,7 @@ for i in range(epochs):
         x_rec_ce,_,_ = model(inpt_noisy)
 
         # kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
-        kl_loss = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        kl_loss = kl_loss_fn_train(x_rec_vae,inpt,z_dist,std)
         # print(kl_div,joint_nll)
         rec_loss_vae = rec_loss_fn(x_rec_vae, inpt)
         # pdb.set_trace()
@@ -114,7 +114,7 @@ for i in range(epochs):
         v_rec_vae, v_z, vstd = model(val_inpt)
         v_rec_ce,_,_ = model(val_noisy)
         # kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
-        kl_loss_val = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        kl_loss_val = kl_loss_fn_train(v_rec_vae,val_inpt,v_z,vstd)
         rec_loss_vae_val = rec_loss_fn(v_rec_vae,val_inpt)
         v_loss_vae =  rec_loss_vae_val + kl_loss_val* beta
 
@@ -130,7 +130,7 @@ for i in range(epochs):
     plot_grad_flow(model)
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
     print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss))  
-    if((i+1)%4 ==0):
+    if((i+1)%5 ==0):
         torch.save(model,'./models/ceVAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 

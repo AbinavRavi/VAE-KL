@@ -42,6 +42,14 @@ def kl_loss_fn(recon_x,x,mu,logstd,rec_log_std=0,sum_samplewise=True):
     # loss = nn.KLDivLoss()
     # losses = loss(mu,logstd**2)
     loss = BCE*KLD
+    return loss, BCE, KLD
+
+def kl_loss_fn_train(recon_x,x,mu,logstd,rec_log_std=0,sum_samplewise=True):
+    BCE = F.mse_loss(recon_x, x)
+    KLD = -0.5 * torch.sum(1 + logstd - mu.pow(2) - logstd.exp())
+    # loss = nn.KLDivLoss()
+    # losses = loss(mu,logstd**2)
+    loss = BCE*KLD
     return loss
 
 def rec_loss_ce(recon_x, x):

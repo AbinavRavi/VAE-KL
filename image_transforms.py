@@ -81,3 +81,6 @@ def to_tensor(image):
     else:
         return img
 
+def normalise(image):
+    image = (image - np.min(image))/(np.max(image) - np.min(image))
+    return image
