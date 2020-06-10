@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import torch
 import skimage.util as skutil
 import skimage.transform as skt
+import sklearn.preprocessing as skp
 
 def random_bbox(image, margin, patchsize):
         """Generate a random tlhw with configuration.
@@ -82,5 +83,5 @@ def to_tensor(image):
         return img
 
 def normalise(image):
-    image = (image - np.min(image))/(np.max(image) - np.min(image))
+    image = skp.normalize(image)
     return image

@@ -28,6 +28,7 @@ class cevae(Dataset):
     def __getitem__(self, index):
         image = nib.load(self.dataset[index])
         x = image.get_data()
+        
         mask = square_mask(x,self.margin,self.patchsize)
 #         if(self.mask == True):
 #             x = square_mask(x,self.margin,self.patchsize)
@@ -41,10 +42,28 @@ class cevae(Dataset):
         masked_image = torch.where(mask !=0,mask,x)
 #         if self.transforms:
 #             x = self.transforms(x)
-
-        return x ,masked_image
+        return x #,masked_image
             
+class vae_loader(Dataset):
+    def __init__(self,path,transforms = None,mask=False):
+        self.path = path
+        self.dataset = glob.glob(path+'*.nii.gz',recursive=True)
+        self.transforms = transforms
+        self.mask = False
 
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, index):
+        image = nib.load(self.dataset[index])
+        x = image.get_data()
+        x = RandomHorizontalFlip(x)
+        x = Resize(x,(128,128))
+        x = normalise(x)
+        x = np.expand_dims(x,axis=2)
+        x = to_tensor(x).float()
+        
+        return x
 def prepare_data(path,margin,patchsize,batch_size =8,split = 0.2):
     dataset = cevae(path,margin,patchsize)
     val_size = int(split*len(dataset))
@@ -54,4 +73,9 @@ def prepare_data(path,margin,patchsize,batch_size =8,split = 0.2):
     
 
 
-        
+def vae_data(path,batch_size=8,split=0.2):
+    dataset = vae_loader(path)
+    val_size = int(split*len(dataset))
+    train_size = int((1-split)*len(dataset))
+    train_ds, val_ds = random_split(dataset,[train_size,val_size])
+    return DataLoader(train_ds, batch_size=batch_size,num_workers=1), DataLoader(val_ds, batch_size=batch_size, num_workers=1)        

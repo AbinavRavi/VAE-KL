@@ -6,6 +6,10 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.tensorboard import SummaryWriter
+<<<<<<< HEAD
+from torchvision.utils import make_grid
+=======
+>>>>>>> b6b4bcfcdced2a597e62f7049b162ce01f49a97b
 from tqdm import tqdm
 import pdb
 import copy
@@ -13,7 +17,11 @@ from datetime import date
 import os
 os.environ['CUDA_VISIBLE_DEVICES']='0'
 
+<<<<<<< HEAD
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+=======
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+>>>>>>> b6b4bcfcdced2a597e62f7049b162ce01f49a97b
 
 def set_seed(seed=1):
     torch.manual_seed(seed)
@@ -25,6 +33,10 @@ path = './data/'
 patchsize = (64,64)
 margin = (80,80)
 batch_size = 1024
+num_workers = 2
+epochs = 1000
+z = 512
+h_dim = (16, 32, 64, 256,512)
 num_workers = 1
 epochs = 1000
 z = 256
@@ -39,7 +51,7 @@ beta = beta.to(device)
 # train_data = cevae(path,patchsize,margin)
 # train_loader = DataLoader(train_data,batch_size,num_workers)
 
-train_loader, val_loader = prepare_data(path,margin,patchsize,batch_size,split = 0.2)
+train_loader, val_loader = vae_data(path,batch_size = batch_size,split = 0.2)
 model = VAE(input_size,h_dim,z)
 # model = torch.load('models/VAE_1024_0.0001_197.pt')
 
@@ -49,9 +61,9 @@ lr_scheduler = StepLR(optimizer, step_size=1)
 def weights_init(m):
     classname = m.__class__.__name__
     if type(m) == nn.Conv2d:
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
+        nn.init.normal_(m.weight.data, 0.0, 0.001)
     elif classname.find('BatchNorm') != -1:
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
+        nn.init.normal_(m.weight.data, 0.0, 0.002)
         nn.init.constant_(m.bias.data, 0)
 
 def plot_grad_flow(model):
@@ -65,7 +77,15 @@ def plot_grad_flow(model):
                 writer.add_scalar('average gradient',n, ave_grad.item())
                 writer.add_scalar('maximum gradient',str(n), max_grad.item())
 
-
+def image_writer(writer,tag,images,epoch):
+    """
+    write the image into a grid in tensorboard
+    tag: the tag for images
+    images: can be a tensor, numpy array or PIL object
+    epoch: epoch number
+    """
+    img_grid = make_grid(images,nrow=8,normalize=False)
+    writer.add_image(tag,img_grid,epoch)
 
 log_path = './working_logs/'
 writer = SummaryWriter(f'{log_path}{date.today()}_vae_{patchsize[0]}_{batch_size}_{lr}')
@@ -88,9 +108,10 @@ for i in range(epochs):
 
         # kl_loss_low = kl_loss(z_dist_low)
         # kl_loss,kl_div,joint_nll = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
-        loss = kl_loss_fn(x_rec_vae,inpt,z_dist,std)
+        loss = kl_loss_fn_train(x_rec_vae,inpt,z_dist,std)
         # rec_loss_vae = rec_loss_fn(x_rec_vae, inpt)
         # pdb.set_trace()
+
         # loss_vae = rec_loss_vae  # kl_loss * beta  
 
         # rec_loss_ce = rec_loss_fn(x_rec_ce, inpt)
@@ -116,7 +137,8 @@ for i in range(epochs):
         v_rec_vae, v_z, vstd = model(val_inpt)
         # v_rec_ce,_,_ = model(val_noisy)
         # kl_loss_val,v_kl,v_joint = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
-        v_loss = kl_loss_fn(v_rec_vae,val_inpt,v_z,vstd)
+        v_loss = kl_loss_fn_train(v_rec_vae,val_inpt,v_z,vstd)
+        image = v_rec_vae.detach().cpu()
         # rec_loss_vae_val = rec_loss_fn(v_rec_vae,val_inpt)
         # v_loss_vae =  rec_loss_vae_val # kl_loss_val* beta
 
@@ -127,11 +149,12 @@ for i in range(epochs):
         # v_loss = kl_loss_val
         val_loss.append(v_loss.item())
         writer.add_scalar('ItrLoss/Val',v_loss.item(),i*len(val_loader)+idx)
+    image_writer(writer,'Itr/Reconstruction',image,i)
     epoch_val_loss = np.array(val_loss).mean()
     # plot_grad_flow(copy.deepcopy(model))
     writer.add_scalars('EpochLoss/',{'train':epoch_train_loss,'val':epoch_val_loss},i)
     print('epoch:{} \t'.format(i+1),'trainloss:{}'.format(epoch_train_loss),'\t','valloss:{}'.format(epoch_val_loss)) 
     if((i+1) % 4 == 0): 
-        torch.save(model,'./VAE_models/VAE_{}_{}_{}.pt'.format(batch_size,lr,i+1))
+        torch.save(model,'./VAE_models/VAE_V2_{}_{}_{}.pt'.format(batch_size,lr,i+1))
 
 
