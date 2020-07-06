@@ -72,7 +72,10 @@ with torch.no_grad():
         output,mu,std = model(data)
         mask = output - data
         mask = mask.detach().cpu().numpy()
+        # print(mask.shape)
         mask = np.squeeze(mask,axis=0)
-        mask = normalise_mask(mask[0,:,:])
-        mask = mask < 0.4
+        # print(mask.shape)
+        mask = normalise_mask(mask)
+        # print(mask.shape)
+        mask = mask < 0.45
         save_masks(mask,filename[0],save_path)
