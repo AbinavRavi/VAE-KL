@@ -141,3 +141,5 @@ kite-installer
 /normal/
 /abnormal/
 CeVAE inference.ipynb
+/masks/
+Trial.ipynb

@@ -64,6 +64,8 @@ class vae_loader(Dataset):
         x = to_tensor(x).float()
         
         return x
+
+        
 def prepare_data(path,margin,patchsize,batch_size =8,split = 0.2):
     dataset = cevae(path,margin,patchsize)
     val_size = int(split*len(dataset))
